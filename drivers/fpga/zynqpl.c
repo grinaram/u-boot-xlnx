@@ -640,6 +640,7 @@ usage:
 
 #ifdef CONFIG_SYS_LONGHELP
 static char zynqaes_help_text[] =
+"grinaram version\r\n"
 "zynqaes [operation type] <srcaddr> <srclen> <dstaddr> <dstlen>  -\n"
 "Decrypts the encrypted image present in source address\n"
 "and places the decrypted image at destination address\n"
