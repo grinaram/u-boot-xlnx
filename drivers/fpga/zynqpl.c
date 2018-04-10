@@ -165,8 +165,14 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 	isr_status = readl(&devcfg_base->int_sts);
 
 	/* Polling the PCAP_INIT status for Set */
+	int old = 0;
 	ts = get_timer(0);
 	while (!(isr_status & DEVCFG_ISR_DMA_DONE)) {
+		if (old!=isr_status)
+		{
+			printf("isr_status: %#010x\r\n", isr_status);
+			old = isr_status;
+		}
 		if (isr_status & DEVCFG_ISR_ERROR_FLAGS_MASK) {
 			debug("%s: Error: isr = 0x%08X\n", __func__,
 			      isr_status);
@@ -180,7 +186,7 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 		if (get_timer(ts) > CONFIG_SYS_FPGA_PROG_TIME) {
 			printf("%s: Timeout wait for DMA to complete\n",
 			       __func__);
-			printf("isr_status: %#010x | expected: %#010x", isr_status, DEVCFG_ISR_DMA_DONE);
+			printf("isr_status: %#010x | expected: %#010x\r\n", isr_status, DEVCFG_ISR_DMA_DONE);
 			return FPGA_FAIL;
 		}
 		isr_status = readl(&devcfg_base->int_sts);
