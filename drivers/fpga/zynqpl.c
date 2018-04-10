@@ -181,6 +181,7 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 		if (get_timer(ts) > CONFIG_SYS_FPGA_PROG_TIME) {
 			printf("%s: Timeout wait for DMA to complete\n",
 			       __func__);
+			printf("isr_status: %#010x | expected: %#010x", isr_status, DEVCFG_ISR_DMA_DONE);
 			return FPGA_FAIL;
 		}
 		isr_status = readl(&devcfg_base->int_sts);
