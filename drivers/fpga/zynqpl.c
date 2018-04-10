@@ -16,6 +16,7 @@
 #include <linux/sizes.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
+#include <sleep.h>
 
 #define DEVCFG_CTRL_PCFG_PROG_B		0x40000000
 #define DEVCFG_CTRL_PCAP_RATE_EN_MASK	0x02000000
@@ -191,12 +192,20 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 		}
 		isr_status = readl(&devcfg_base->int_sts);
 	}
-
+	if (old!=isr_status)
+	{
+		printf("isr_status: %#010x\r\n", isr_status);
+		old = isr_status;
+	}
 	debug("%s: DMA transfer is done\n", __func__);
 
 	/* Clear out the DMA status */
 	writel(DEVCFG_ISR_DMA_DONE, &devcfg_base->int_sts);
-
+	if (old!=isr_status)
+	{
+		printf("isr_status: %#010x\r\n", isr_status);
+		old = isr_status;
+	}
 	return FPGA_SUCCESS;
 }
 
@@ -503,6 +512,8 @@ struct xilinx_fpga_op zynq_op = {
 int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 		      u8 bstype)
 {
+	u32 isr_status, ts;
+
 	if ((srcaddr < SZ_1M) || (dstaddr < SZ_1M)) {
 		printf("%s: src and dst addr should be > 1M\n",
 		       __func__);
@@ -520,12 +531,38 @@ int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 	debug("%s: Source = 0x%08X\n", __func__, (u32)srcaddr);
 	debug("%s: Size = %zu\n", __func__, srclen);
 
-	dcache_disable();
-	if (zynq_dma_transfer(srcaddr | 1, srclen, dstaddr | 1, dstlen)) {
-		dcache_enable();
+	/* flush(clean & invalidate) d-cache range buf */
+	flush_dcache_range((u32)srcaddr, (u32)srcaddr +
+			   roundup(srclen << 2, ARCH_DMA_MINALIGN));
+	/*
+	 * Flush destination address range only if image is not
+	 * bitstream.
+	 */
+	if (bstype == BIT_NONE)
+		flush_dcache_range((u32)dstaddr, (u32)dstaddr +
+				   roundup(dstlen << 2, ARCH_DMA_MINALIGN));
+
+	if (zynq_dma_transfer(srcaddr | 1, srclen, dstaddr | 1, dstlen))
 		return FPGA_FAIL;
+
+	if (bstype == BIT_FULL) {
+		isr_status = readl(&devcfg_base->int_sts);
+		/* Check FPGA configuration completion */
+		ts = get_timer(0);
+		while (!(isr_status & DEVCFG_ISR_PCFG_DONE)) {
+			if (get_timer(ts) > CONFIG_SYS_FPGA_WAIT) {
+				printf("%s: Timeout wait for FPGA to config\n",
+				       __func__);
+				return FPGA_FAIL;
+			}
+			isr_status = readl(&devcfg_base->int_sts);
+		}
+
+		printf("%s: FPGA config done\n", __func__);
+
+		if (bstype != BIT_PARTIAL)
+			zynq_slcr_devcfg_enable();
 	}
-	dcache_enable();
 
 	return FPGA_SUCCESS;
 }
