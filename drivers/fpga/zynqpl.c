@@ -16,7 +16,6 @@
 #include <linux/sizes.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
-#include <sleep.h>
 
 #define DEVCFG_CTRL_PCFG_PROG_B		0x40000000
 #define DEVCFG_CTRL_PCAP_RATE_EN_MASK	0x02000000
