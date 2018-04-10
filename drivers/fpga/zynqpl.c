@@ -16,6 +16,8 @@
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
 
+#define DEBUG 1
+
 #define DEVCFG_CTRL_PCFG_PROG_B		0x40000000
 #define DEVCFG_CTRL_PCAP_RATE_EN_MASK	0x02000000
 #define DEVCFG_ISR_FATAL_ERROR_MASK	0x00740040
@@ -531,7 +533,7 @@ static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 	u8 imgtype = BIT_NONE;
 	int status;
 	u8 i = 1;
-
+	
 	if (argc < 4 && argc > 5)
 		goto usage;
 
@@ -584,6 +586,7 @@ usage:
 
 #ifdef CONFIG_SYS_LONGHELP
 static char zynqaes_help_text[] =
+"grinaram version\n"
 "zynqaes [operation type] <srcaddr> <srclen> <dstaddr> <dstlen>  -\n"
 "Decrypts the encrypted image present in source address\n"
 "and places the decrypted image at destination address\n"
