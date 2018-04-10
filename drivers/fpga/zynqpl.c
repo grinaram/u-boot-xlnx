@@ -6,6 +6,7 @@
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
+#define DEBUG 1
 
 #include <common.h>
 #include <console.h>
@@ -15,8 +16,6 @@
 #include <linux/sizes.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
-
-#define DEBUG 1
 
 #define DEVCFG_CTRL_PCFG_PROG_B		0x40000000
 #define DEVCFG_CTRL_PCAP_RATE_EN_MASK	0x02000000
