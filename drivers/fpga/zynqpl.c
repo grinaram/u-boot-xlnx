@@ -37,7 +37,7 @@
 #endif
 
 #ifndef CONFIG_SYS_FPGA_PROG_TIME
-#define CONFIG_SYS_FPGA_PROG_TIME	(CONFIG_SYS_HZ * 4) /* 4 s */
+#define CONFIG_SYS_FPGA_PROG_TIME	(CONFIG_SYS_HZ * 20) /* 4 s */
 #endif
 
 #define DUMMY_WORD	0xffffffff
@@ -382,7 +382,10 @@ static int zynq_load(xilinx_desc *desc, const void *buf, size_t bsize,
 			   roundup(bsize, ARCH_DMA_MINALIGN));
 
 	if (zynq_dma_transfer((u32)buf | 1, bsize >> 2, 0xffffffff, 0))
+	{
+		printf("%s: FPGA config FAILED\n", __func__);
 		return FPGA_FAIL;
+	}
 
 	isr_status = readl(&devcfg_base->int_sts);
 	/* Check FPGA configuration completion */
