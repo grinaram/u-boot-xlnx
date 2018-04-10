@@ -1,4 +1,4 @@
-*
+/*
  * (C) Copyright 2012-2013, Xilinx, Michal Simek
  *
  * (C) Copyright 2012
