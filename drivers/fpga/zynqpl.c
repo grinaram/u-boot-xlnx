@@ -566,7 +566,6 @@ int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 	return FPGA_SUCCESS;
 }
 
-
 static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 				 char * const argv[])
 {
@@ -578,7 +577,7 @@ static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 	u8 imgtype = BIT_NONE;
 	int status;
 	u8 i = 1;
-	
+
 	if (argc < 4 && argc > 5)
 		goto usage;
 
@@ -619,7 +618,17 @@ static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 		goto usage;
 	}
 
-	status = zynq_decrypt_load(srcaddr, srclen, dstaddr, dstlen, imgtype);
+	/*
+	 * Roundup source and destination lengths to
+	 * word size
+	 */
+	if (srclen % 4)
+		srclen = roundup(srclen, 4);
+	if (dstlen % 4)
+		dstlen = roundup(dstlen, 4);
+
+	status = zynq_decrypt_load(srcaddr, srclen >> 2, dstaddr, dstlen >> 2,
+				   imgtype);
 	if (status != 0)
 		return -1;
 
