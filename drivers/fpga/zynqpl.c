@@ -1,4 +1,4 @@
-/*
+*
  * (C) Copyright 2012-2013, Xilinx, Michal Simek
  *
  * (C) Copyright 2012
@@ -6,7 +6,6 @@
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
-#define DEBUG 1
 
 #include <common.h>
 #include <console.h>
@@ -18,6 +17,7 @@
 #include <asm/arch/sys_proto.h>
 
 #define DEVCFG_CTRL_PCFG_PROG_B		0x40000000
+#define DEVCFG_CTRL_PCFG_AES_EFUSE_MASK	0x00001000
 #define DEVCFG_CTRL_PCAP_RATE_EN_MASK	0x02000000
 #define DEVCFG_ISR_FATAL_ERROR_MASK	0x00740040
 #define DEVCFG_ISR_ERROR_FLAGS_MASK	0x00340840
@@ -37,7 +37,7 @@
 #endif
 
 #ifndef CONFIG_SYS_FPGA_PROG_TIME
-#define CONFIG_SYS_FPGA_PROG_TIME	(CONFIG_SYS_HZ * 20) /* 4 s */
+#define CONFIG_SYS_FPGA_PROG_TIME	(CONFIG_SYS_HZ * 4) /* 4 s */
 #endif
 
 #define DUMMY_WORD	0xffffffff
@@ -163,16 +163,10 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 	writel(dstlen, &devcfg_base->dma_dst_len);
 
 	isr_status = readl(&devcfg_base->int_sts);
-
+	u32 old = isr_status;
 	/* Polling the PCAP_INIT status for Set */
-	int old = 0;
 	ts = get_timer(0);
 	while (!(isr_status & DEVCFG_ISR_DMA_DONE)) {
-		if (old!=isr_status)
-		{
-			printf("isr_status: %#010x\r\n", isr_status);
-			old = isr_status;
-		}
 		if (isr_status & DEVCFG_ISR_ERROR_FLAGS_MASK) {
 			debug("%s: Error: isr = 0x%08X\n", __func__,
 			      isr_status);
@@ -186,25 +180,21 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 		if (get_timer(ts) > CONFIG_SYS_FPGA_PROG_TIME) {
 			printf("%s: Timeout wait for DMA to complete\n",
 			       __func__);
-			printf("isr_status: %#010x | expected: %#010x\r\n", isr_status, DEVCFG_ISR_DMA_DONE);
 			return FPGA_FAIL;
 		}
 		isr_status = readl(&devcfg_base->int_sts);
+		if(old!=isr_status)
+		{
+			printf("isr_status: 0x%08X\n", isr_status);
+			old=isr_status;
+		}
 	}
-	if (old!=isr_status)
-	{
-		printf("isr_status: %#010x\r\n", isr_status);
-		old = isr_status;
-	}
+
 	debug("%s: DMA transfer is done\n", __func__);
 
 	/* Clear out the DMA status */
 	writel(DEVCFG_ISR_DMA_DONE, &devcfg_base->int_sts);
-	if (old!=isr_status)
-	{
-		printf("isr_status: %#010x\r\n", isr_status);
-		old = isr_status;
-	}
+
 	return FPGA_SUCCESS;
 }
 
@@ -222,8 +212,23 @@ static int zynq_dma_xfer_init(bitstream_type bstype)
 		/* Setting PCFG_PROG_B signal to high */
 		control = readl(&devcfg_base->ctrl);
 		writel(control | DEVCFG_CTRL_PCFG_PROG_B, &devcfg_base->ctrl);
+
+		/*
+		 * Delay is required if AES efuse is selected as
+		 * key source.
+		 */
+		if (control & DEVCFG_CTRL_PCFG_AES_EFUSE_MASK)
+			mdelay(5);
+
 		/* Setting PCFG_PROG_B signal to low */
 		writel(control & ~DEVCFG_CTRL_PCFG_PROG_B, &devcfg_base->ctrl);
+
+		/*
+		 * Delay is required if AES efuse is selected as
+		 * key source.
+		 */
+		if (control & DEVCFG_CTRL_PCFG_AES_EFUSE_MASK)
+			mdelay(5);
 
 		/* Polling the PCAP_INIT status for Reset */
 		ts = get_timer(0);
@@ -390,10 +395,7 @@ static int zynq_load(xilinx_desc *desc, const void *buf, size_t bsize,
 			   roundup(bsize, ARCH_DMA_MINALIGN));
 
 	if (zynq_dma_transfer((u32)buf | 1, bsize >> 2, 0xffffffff, 0))
-	{
-		printf("%s: FPGA config FAILED\n", __func__);
 		return FPGA_FAIL;
-	}
 
 	isr_status = readl(&devcfg_base->int_sts);
 	/* Check FPGA configuration completion */
@@ -565,6 +567,7 @@ int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 
 	return FPGA_SUCCESS;
 }
+
 
 static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 				 char * const argv[])
