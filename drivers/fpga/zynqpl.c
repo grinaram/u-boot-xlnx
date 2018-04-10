@@ -577,7 +577,7 @@ static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 	u8 imgtype = BIT_NONE;
 	int status;
 	u8 i = 1;
-
+	printf("grinaram version\r\n");
 	if (argc < 4 && argc > 5)
 		goto usage;
 
