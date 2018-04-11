@@ -154,6 +154,7 @@ static void *check_data(u8 *buf, size_t bsize, u32 *swap)
 
 static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 {
+	debug(":zynq_dma_transfer\r\n");
 	unsigned long ts;
 	u32 isr_status;
 
@@ -201,6 +202,7 @@ static int zynq_dma_transfer(u32 srcbuf, u32 srclen, u32 dstbuf, u32 dstlen)
 
 static int zynq_dma_xfer_init(bitstream_type bstype)
 {
+	debug(":zynq_dma_xfer_init\r\n");
 	u32 status, control, isr_status;
 	unsigned long ts;
 
@@ -304,6 +306,7 @@ static int zynq_dma_xfer_init(bitstream_type bstype)
 
 static u32 *zynq_align_dma_buffer(u32 *buf, u32 len, u32 swap)
 {
+	debug(":zynq_align_dma_buffer\r\n");
 	u32 *new_buf;
 	u32 i;
 
@@ -344,6 +347,7 @@ static int zynq_validate_bitstream(xilinx_desc *desc, const void *buf,
 				   size_t bsize, u32 blocksize, u32 *swap,
 				   bitstream_type *bstype)
 {
+	debug(":zynq_validate_bitstream\r\n");
 	u32 *buf_start;
 	u32 diff;
 
@@ -375,6 +379,7 @@ static int zynq_validate_bitstream(xilinx_desc *desc, const void *buf,
 static int zynq_load(xilinx_desc *desc, const void *buf, size_t bsize,
 		     bitstream_type bstype)
 {
+	debug(":zynq_load\r\n");
 	unsigned long ts; /* Timestamp */
 	u32 isr_status, swap;
 
@@ -422,6 +427,7 @@ static int zynq_load(xilinx_desc *desc, const void *buf, size_t bsize,
 static int zynq_loadfs(xilinx_desc *desc, const void *buf, size_t bsize,
 		       fpga_fs_info *fsinfo)
 {
+	debug(":zynq_loadfs\r\n");
 	unsigned long ts; /* Timestamp */
 	u32 isr_status, swap;
 	u32 partialbit = 0;
@@ -515,7 +521,7 @@ int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 		      u8 bstype)
 {
 	u32 isr_status, ts;
-
+	debug(":zynq_decrypt_load\r\n");
 	if ((srcaddr < SZ_1M) || (dstaddr < SZ_1M)) {
 		printf("%s: src and dst addr should be > 1M\n",
 		       __func__);
@@ -573,6 +579,7 @@ int zynq_decrypt_load(u32 srcaddr, u32 srclen, u32 dstaddr, u32 dstlen,
 static int do_zynq_decrypt_image(cmd_tbl_t *cmdtp, int flag, int argc,
 				 char * const argv[])
 {
+	debug(":do_zynq_decrypt_image\r\n");
 	char *endp;
 	u32 srcaddr;
 	u32 srclen;
